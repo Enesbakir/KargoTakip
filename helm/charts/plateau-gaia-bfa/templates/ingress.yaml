@@ -1,0 +1,41 @@
+{{- if and .Values.ingress.enabled .Values.ingress.paths }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "plateau-gaia-bfa.fullname" . }}
+  labels:
+    {{- include "plateau-gaia-bfa.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className | quote }}
+  {{- end }}
+  {{- if and .Values.ingress.tls.enabled .Values.ingress.host }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host | quote }}
+      {{- with .Values.ingress.tls.secretName }}
+      secretName: {{ . | quote }}
+      {{- end }}
+  {{- end }}
+  rules:
+    {{- if .Values.ingress.host }}
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+    {{- else }}
+    - http:
+    {{- end }}
+        paths:
+          {{- range .Values.ingress.paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ include "plateau-gaia-bfa.fullname" $ }}
+                port:
+                  name: http
+          {{- end }}
+{{- end }}

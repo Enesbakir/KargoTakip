@@ -1,0 +1,82 @@
+[
+  {
+    "route": {
+      "id": "route-operation-c47d8659-020d-45f9-8625-48fb818cca4a",
+      "from": {
+        "uri": "direct:route-operation-c47d8659-020d-45f9-8625-48fb818cca4a",
+        "steps": [
+          {
+            "setProperty": {
+              "name": "originalInput",
+              "simple": "${body}"
+            }
+          },
+          {
+            "setProperty": {
+              "name": "correlationId",
+              "simple": "${exchangeId}"
+            }
+          },
+          {
+            "log": {
+              "message": "[${exchangeProperty.correlationId}] Calling REST service call",
+              "loggingLevel": "DEBUG"
+            }
+          },
+          {
+            "to": {
+              "uri": "direct:route-operation-c47d8659-020d-45f9-8625-48fb818cca4a-call-call-77faa177-7366-4a9e-aef4-2e7f80f3a28f",
+              "variableReceive": "response_rest_service_call"
+            }
+          },
+          {
+            "setBody": {
+              "simple": "{\"result\": \"${variable.response_rest_service_call[result]}\"}"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": {
+      "id": "route-operation-c47d8659-020d-45f9-8625-48fb818cca4a-call-call-77faa177-7366-4a9e-aef4-2e7f80f3a28f",
+      "from": {
+        "uri": "direct:route-operation-c47d8659-020d-45f9-8625-48fb818cca4a-call-call-77faa177-7366-4a9e-aef4-2e7f80f3a28f",
+        "steps": [
+          {
+            "setBody": {
+              "constant": ""
+            }
+          },
+          {
+            "removeHeader": {
+              "name": "CamelHttpQuery"
+            }
+          },
+          {
+            "kamelet": {
+              "name": "plateau-rest-invoke-action",
+              "parameters": {
+                "url": "https://api.example.com/v1/resource",
+                "method": "GET",
+                "socketTimeoutMs": 10000,
+                "connectionRequestTimeoutMs": 2000
+              }
+            }
+          },
+          {
+            "convertBodyTo": {
+              "type": "java.lang.String"
+            }
+          },
+          {
+            "unmarshal": {
+              "json": {}
+            }
+          }
+        ]
+      }
+    }
+  }
+]

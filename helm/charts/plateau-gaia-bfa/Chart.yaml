@@ -1,0 +1,12 @@
+apiVersion: v2
+name: plateau-gaia-bfa
+description: >-
+  GaiA BFA (Backend For AI) gateway — generic OpenShift chart for a single GaiA instance
+  (proxy / BFA). One instance = ConfigMap + Deployment + Service + Ingress
+  (+ optional Redis). Config is read from config/<solutionSlug>/<environmentSlug>/
+  inside the chart via .Files.Glob. In an umbrella chart, add one aliased
+  dependency per solution (alias = solution slug) and select the environment
+  through the generated values-<solution>-<environment>.yaml fragment.
+type: application
+version: 1.0.0
+appVersion: "latest"

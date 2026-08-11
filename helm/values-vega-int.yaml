@@ -1,0 +1,37 @@
+# Environment values for "INT" (vega-int).
+# One top-level block per solution; the key must equal the dependency alias in
+# helm/Chart.yaml. A republish rewrites only the keys it generates — keys you add
+# inside a solution block, and everything outside it, are preserved.
+# Secrets are provided via Kubernetes Secrets, never through this file.
+
+new-integration-solution:
+  enabled: true
+  nameOverride: new-integration-solution
+  config:
+    solutionSlug: new-integration-solution
+    environmentSlug: vega-int
+  image:
+    repository: registry.isbank/plateau/gaia-bfa
+    tag: 1.4.2-SNAPSHOT
+  env:
+    NYX_ENABLED: "false"
+    PLATEAU_GAIA_AUTHORIZATION_STRATEGY: NO_AUTHORIZATION
+  redis:
+    enabled: false
+  ingress:
+    enabled: true
+    className: ""
+    host: new-integration-solution.kargotakip.kube.intisbank
+    paths:
+      - path: /
+        pathType: Prefix
+    tls:
+      enabled: true
+      secretName: tls-secret
+  existingSecret: ""
+  secrets:
+    conjur:
+      enabled: false
+    kafka:
+      username: ""
+      password: ""

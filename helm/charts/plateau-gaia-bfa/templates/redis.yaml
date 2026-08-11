@@ -1,0 +1,89 @@
+{{- if .Values.redis.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plateau-gaia-bfa.fullname" . }}-redis
+  labels:
+    {{- include "plateau-gaia-bfa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "plateau-gaia-bfa.redisSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plateau-gaia-bfa.redisSelectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image }}
+          # Persistence disabled (--save "" --appendonly no) -> no PVC, in-memory only.
+          # Sufficient for rate-limit counters; Redis restart resets counters (acceptable).
+          {{- if .Values.redis.existingSecret }}
+          command:
+            - sh
+            - -c
+            - |
+              if [ -f /redis-secret/password ] && [ -s /redis-secret/password ]; then
+                exec redis-server --save "" --appendonly no --requirepass "$(cat /redis-secret/password)"
+              else
+                exec redis-server --save "" --appendonly no
+              fi
+          {{- else }}
+          command: ["redis-server", "--save", "", "--appendonly", "no"]
+          {{- end }}
+          ports:
+            - name: redis
+              containerPort: 6379
+          resources:
+            {{- toYaml .Values.redis.resources | nindent 12 }}
+          readinessProbe:
+            tcpSocket: { port: redis }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: { port: redis }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+            seccompProfile: { type: RuntimeDefault }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+            {{- if .Values.redis.existingSecret }}
+            - { name: redis-password, mountPath: /redis-secret, readOnly: true }
+            {{- end }}
+      volumes:
+        - name: data
+          emptyDir: {}
+        {{- if .Values.redis.existingSecret }}
+        # The chart never creates a Secret; Redis auth comes only from a
+        # pre-existing operator-owned Secret referenced here.
+        - name: redis-password
+          secret:
+            secretName: {{ .Values.redis.existingSecret }}
+            optional: true
+            items:
+              - key: password
+                path: password
+        {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "plateau-gaia-bfa.fullname" . }}-redis
+  labels:
+    {{- include "plateau-gaia-bfa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  selector:
+    {{- include "plateau-gaia-bfa.redisSelectorLabels" . | nindent 4 }}
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+{{- end }}
