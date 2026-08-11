@@ -1,0 +1,18 @@
+{
+  "manifestVersion": "1.0",
+  "scope": "chart",
+  "generatedAt": "2026-08-11T13:09:04.596Z",
+  "files": [
+    "helm/charts/plateau-gaia-bfa/Chart.yaml",
+    "helm/charts/plateau-gaia-bfa/deployment-manifest.json",
+    "helm/charts/plateau-gaia-bfa/templates/_helpers.tpl",
+    "helm/charts/plateau-gaia-bfa/templates/configmap.yaml",
+    "helm/charts/plateau-gaia-bfa/templates/deployment.yaml",
+    "helm/charts/plateau-gaia-bfa/templates/ingress.yaml",
+    "helm/charts/plateau-gaia-bfa/templates/redis.yaml",
+    "helm/charts/plateau-gaia-bfa/templates/secret.yaml",
+    "helm/charts/plateau-gaia-bfa/templates/service.yaml",
+    "helm/charts/plateau-gaia-bfa/values.schema.json",
+    "helm/charts/plateau-gaia-bfa/values.yaml"
+  ]
+}

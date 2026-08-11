@@ -1,0 +1,100 @@
+{
+  "spec": "gaia-catalog/1.0",
+  "generated_at": "2026-08-11T13:09:04.596Z",
+  "gateway": {
+    "id": "new-integration-solution-gaia",
+    "name": "GaiA Backend For AI",
+    "base_url": "https://new-integration-solution.kargotakip.kube.isbank"
+  },
+  "gateway_errors": [
+    {
+      "status": 400,
+      "code": "BAD_REQUEST",
+      "description": "Invalid request payload or parameters"
+    },
+    {
+      "status": 401,
+      "code": "UNAUTHORIZED",
+      "description": "Authentication required"
+    },
+    {
+      "status": 403,
+      "code": "FORBIDDEN",
+      "description": "Policy decision denied access"
+    },
+    {
+      "status": 429,
+      "code": "TOO_MANY_REQUESTS",
+      "description": "Rate limit exceeded"
+    },
+    {
+      "status": 500,
+      "code": "INTERNAL_ERROR",
+      "description": "Internal gateway error"
+    },
+    {
+      "status": 502,
+      "code": "BAD_GATEWAY",
+      "description": "Upstream service unavailable"
+    }
+  ],
+  "entry_points": [
+    {
+      "id": "entrypoint-9ad4c0a6-21a9-4568-8e8b-cea0e850698a",
+      "name": "New MCP Entry Point",
+      "description": "fdasfdasfdsafadsfasdfasdfasdfasddasfadsfasdfasdfasdfasdfasdfasdfasdfasd",
+      "version": "1.0.0",
+      "protocol": "MCP_STREAMABLE",
+      "consumerEndpoint": {
+        "path": "/mcp/new-entry-point/str"
+      },
+      "tools": [
+        {
+          "id": "operation-c47d8659-020d-45f9-8625-48fb818cca4a",
+          "name": "new_tool",
+          "description": "fadsfadsfadsfasdfsdafasdfsadfasdfasdfasdfasdfasdfasdf",
+          "routing": {
+            "route_id": "route-operation-c47d8659-020d-45f9-8625-48fb818cca4a"
+          },
+          "constraints": {
+            "timeout_ms": 30000,
+            "max_response_size": 50000,
+            "truncate_on_overflow": false
+          },
+          "input": {
+            "type": "json-schema",
+            "format": "application/schema+json",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ]
+            }
+          },
+          "output": {
+            "type": "json-schema",
+            "format": "application/schema+json",
+            "schema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": true
+            }
+          }
+        }
+      ],
+      "filters": [
+        {
+          "name": "logging",
+          "args": {
+            "level": "INFO"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "trustedIssuers": [
+    {
+      "id": "local-nyx",
+      "name": "Local NyX Keycloak",
+      "issuer": "http://user.idp.iam.local:18086/realms/nyx"
+    },
+    {
+      "id": "corp-idp",
+      "name": "Corporate IdP",
+      "issuer": "https://idp.isbank/realms/plateau"
+    }
+  ],
+  "tokenTargets": []
+}

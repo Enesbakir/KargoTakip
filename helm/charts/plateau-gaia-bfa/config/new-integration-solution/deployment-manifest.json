@@ -1,0 +1,22 @@
+{
+  "manifestVersion": "1.0",
+  "scope": "solution",
+  "solutionSlug": "new-integration-solution",
+  "generatedAt": "2026-08-11T13:09:04.596Z",
+  "files": [
+    "helm/charts/plateau-gaia-bfa/config/new-integration-solution/deployment-manifest.json",
+    "helm/charts/plateau-gaia-bfa/config/new-integration-solution/project.json",
+    "helm/charts/plateau-gaia-bfa/config/new-integration-solution/vega-int/auth-servers.gwcjson",
+    "helm/charts/plateau-gaia-bfa/config/new-integration-solution/vega-int/gateway-ep-config.gwcjson",
+    "helm/charts/plateau-gaia-bfa/config/new-integration-solution/vega-int/tls-profiles.gwcjson",
+    "helm/charts/plateau-gaia-bfa/config/new-integration-solution/vega-int/tools-routes.gwcjson",
+    "helm/charts/plateau-gaia-bfa/config/new-integration-solution/vega-prod/auth-servers.gwcjson",
+    "helm/charts/plateau-gaia-bfa/config/new-integration-solution/vega-prod/gateway-ep-config.gwcjson",
+    "helm/charts/plateau-gaia-bfa/config/new-integration-solution/vega-prod/tls-profiles.gwcjson",
+    "helm/charts/plateau-gaia-bfa/config/new-integration-solution/vega-prod/tools-routes.gwcjson",
+    "helm/charts/plateau-gaia-bfa/config/new-integration-solution/vega-uat/auth-servers.gwcjson",
+    "helm/charts/plateau-gaia-bfa/config/new-integration-solution/vega-uat/gateway-ep-config.gwcjson",
+    "helm/charts/plateau-gaia-bfa/config/new-integration-solution/vega-uat/tls-profiles.gwcjson",
+    "helm/charts/plateau-gaia-bfa/config/new-integration-solution/vega-uat/tools-routes.gwcjson"
+  ]
+}

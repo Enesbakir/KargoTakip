@@ -1,0 +1,109 @@
+# Generic defaults for one GaiA instance. Environment-specific values come from
+# the generated values-<solution>-<environment>.yaml fragments (generator-owned).
+# No secret values live in any values file: secrets are provided via
+# Kubernetes/OpenShift Secrets (existingSecret, redis.existingSecret, ingress TLS).
+
+# Umbrella installs set nameOverride to the solution slug (one aliased
+# dependency per solution) so instances in the same release never collide.
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: gaia-bfa
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicas: 2
+containerPort: 8585
+
+# Which config/<solutionSlug>/<environmentSlug>/ directory inside the chart
+# feeds the ConfigMap. Both are required — the render fails when empty.
+config:
+  solutionSlug: ""
+  environmentSlug: ""
+
+# Optional Kubernetes/OpenShift Secret injected as env vars (GaiA resolves
+# ${ENV} references in tls-profiles.gwcjson from the environment).
+existingSecret: ""
+
+# name->value map, injected verbatim into the container.
+env:
+  NYX_ENABLED: "false"
+
+resources:
+  requests: { cpu: 500m, memory: 768Mi }
+  limits:   { cpu: "1",  memory: 1280Mi }
+
+redis:
+  # enabled: true  -> deploys internal Redis; REDIS_HOST/PORT set from internal service.
+  # enabled: false -> no internal Redis deployed.
+  #   if host is also set, REDIS_HOST/PORT are still injected (external Redis mode).
+  #   if host is empty, no Redis env vars are injected at all.
+  enabled: false
+  image: redis:7-alpine
+  # host/port: used only when enabled=false to point at an external Redis instance.
+  host: ""
+  port: 6379
+  # Redis authentication: reads the 'password' key from this pre-existing
+  # Secret. Empty -> no authentication. The chart never creates a Secret.
+  existingSecret: ""
+  resources:
+    requests: { cpu: 50m,  memory: 64Mi }
+    limits:   { cpu: 200m, memory: 128Mi }
+
+ingress:
+  enabled: false
+  className: ""
+  host: ""                      # empty -> OpenShift router generates a host
+  tls:
+    # enabled: true -> the ingress is TLS-terminated (needs a host).
+    # secretName empty -> served by the platform's own certificate (OpenShift router wildcard);
+    # set it only to terminate with your own pre-existing TLS Secret.
+    enabled: false
+    secretName: ""
+  annotations: {}
+  # One rule per entry point consumer path. A published values-<env>.yaml always
+  # replaces this list with the paths the design actually declares; the entry
+  # below is only the fallback for using this chart by hand.
+  paths:
+    - { path: /, pathType: Prefix }
+
+# ServiceAccount configuration. The chart uses the namespace's existing
+# <namespace>-sa ServiceAccount by default (serviceAccount.name empty).
+# Set serviceAccount.create: true only if a dedicated SA is needed.
+serviceAccount:
+  enabled: true
+  create: false
+  # name: ""  # empty -> uses "<namespace>-sa" (existing in cluster)
+
+# Conjur secret management. When enabled, secret values must start with
+# "Vault/" prefix (e.g., Vault/Conjur/CONJUR_ACI.../path/to/secret).
+# The chart validates this at template rendering time.
+secrets:
+  conjur:
+    enabled: false
+    image: scorenexus.isbank:9443/cyberark/secrets-provider-for-k8s
+    tag: latest
+  # Kafka SASL credentials (injected as KAFKA_SASL_USERNAME/PASSWORD env vars).
+  # Values can be plain text (standard mode) or "Vault/Conjur/..." paths (conjur mode).
+  kafka:
+    username: ""
+    password: ""
+  # Additional secret key->value pairs injected as env vars.
+  # Use for any additional secrets beyond kafka.username/password.
+  # Values can be plain text (standard mode) or "Vault/Conjur/..." paths (conjur mode).
+  secret-key-values: {}
+
+# Certificate trusting configuration for Java applications.
+# Imports custom CA certificates into Java's cacerts trust store via an initContainer.
+trustcerts:
+  enabled: false
+  # Inline certificates: key = cert name (no extension), value = PEM content.
+  certs: {}
+    # example-ca: |
+    #   -----BEGIN CERTIFICATE-----
+    #   MIIDXTCCAkWgAwIBAgIJAKJ5Z...
+    #   -----END CERTIFICATE-----
+  # External ConfigMaps containing certificates: configmap-name -> key-name.
+  configmaps: {}
+    # root-ca.crt: root-ca.crt

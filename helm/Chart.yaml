@@ -1,0 +1,13 @@
+apiVersion: v2
+name: helm-template  #Replace
+description: Umbrella chart for the Plateau NyX solutions published into this repository.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+dependencies:
+  - name: plateau-gaia-bfa
+    alias: new-integration-solution
+    condition: new-integration-solution.enabled
+    repository: file://charts/plateau-gaia-bfa
+    version: "1.0.0"

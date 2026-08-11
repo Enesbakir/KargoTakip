@@ -1,0 +1,206 @@
+{
+  "formatVersion": "2.0",
+  "id": "solution-1d32aca9-dac3-4217-bb96-a1b9d5d00a08",
+  "name": "New integration solution",
+  "slug": "new-integration-solution",
+  "description": "",
+  "gateway": {
+    "id": "new-integration-solution-gaia",
+    "name": "GaiA Backend For AI"
+  },
+  "entryPoints": [
+    {
+      "id": "entrypoint-9ad4c0a6-21a9-4568-8e8b-cea0e850698a",
+      "name": "New MCP Entry Point",
+      "description": "fdasfdasfdsafadsfasdfasdfasdfasddasfadsfasdfasdfasdfasdfasdfasdfasdfasd",
+      "version": "1.0.0",
+      "protocol": "MCP_STREAMABLE",
+      "path": "/mcp/new-entry-point/str",
+      "authType": "NONE",
+      "trustedIssuerRefs": [],
+      "authorizationMode": "NO_AUTHORIZATION",
+      "localPermissions": [],
+      "rateLimit": {
+        "enabled": false,
+        "requestLimit": 60,
+        "period": "1m",
+        "limitBy": "CLIENT_IP"
+      },
+      "modelConfig": {
+        "enabled": false,
+        "provider": "DEFAULT",
+        "modelId": "",
+        "reasoning": false
+      },
+      "operations": [
+        {
+          "id": "operation-c47d8659-020d-45f9-8625-48fb818cca4a",
+          "name": "new_tool",
+          "description": "fadsfadsfadsfasdfsdafasdfsadfasdfasdfasdfasdfasdfasdf",
+          "restPath": "/new-operation/{id}",
+          "restMethods": [
+            "GET"
+          ],
+          "soapOperationName": "",
+          "soapAction": "",
+          "wsdlUrl": "",
+          "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"id\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"id\"\n  ]\n}",
+          "outputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {},\n  \"additionalProperties\": true\n}",
+          "timeoutMs": 30000,
+          "maxResponseSize": 50000,
+          "truncateOnOverflow": false,
+          "streamable": false,
+          "streamFormat": "SSE",
+          "routingMode": "COMPOSED",
+          "baseUrl": "",
+          "propagateUri": true,
+          "fallbackRouteId": "",
+          "quota": {
+            "enabled": false,
+            "period": "1m",
+            "requestLimit": 60,
+            "tokenLimit": 0
+          },
+          "circuitBreaker": {
+            "enabled": false,
+            "failureRateThreshold": 50,
+            "minimumCalls": 10,
+            "permittedCallsInHalfOpenState": 5,
+            "slidingWindowSize": 20,
+            "waitDurationOpenStateSeconds": 30
+          },
+          "pdp": {
+            "actionRef": "entrypoint-9ad4c0a6-21a9-4568-8e8b-cea0e850698a:operation-c47d8659-020d-45f9-8625-48fb818cca4a",
+            "actionId": "entrypoint-9ad4c0a6-21a9-4568-8e8b-cea0e850698a:operation-c47d8659-020d-45f9-8625-48fb818cca4a",
+            "resourceType": "GAIA_OPERATION",
+            "resourceIdSource": ""
+          },
+          "calls": [
+            {
+              "id": "call-77faa177-7366-4a9e-aef4-2e7f80f3a28f",
+              "name": "REST service call",
+              "kind": "REST",
+              "url": "https://api.example.com/v1/resource",
+              "method": "GET",
+              "headers": [],
+              "requestParameters": [],
+              "bodyTemplate": "${input}",
+              "soapAction": "",
+              "responseFormat": "JSON",
+              "timeoutMs": 10000,
+              "requestSchema": "",
+              "responseSchema": "",
+              "upstreamAuth": {
+                "method": "NONE"
+              }
+            }
+          ],
+          "executionStages": [
+            {
+              "id": "stage-669065f0-b674-437f-9b32-7410fe813681",
+              "name": "Service calls",
+              "mode": "SEQUENTIAL",
+              "callIds": [
+                "call-77faa177-7366-4a9e-aef4-2e7f80f3a28f"
+              ],
+              "stopOnException": true
+            }
+          ],
+          "response": {
+            "mode": "mapped",
+            "mappings": [
+              {
+                "id": "mapping-5425b203-d110-4ac4-a2c7-7f086c58086c",
+                "outputField": "result",
+                "callId": "call-77faa177-7366-4a9e-aef4-2e7f80f3a28f",
+                "sourcePath": "result",
+                "sourceLanguage": "SIMPLE",
+                "valueType": "string",
+                "mask": "none"
+              }
+            ],
+            "template": "{\"result\": ${exchangeProperty.response}}"
+          }
+        }
+      ]
+    }
+  ],
+  "trustedIssuers": [
+    {
+      "id": "local-nyx",
+      "name": "Local NyX Keycloak",
+      "issuer": "http://user.idp.iam.local:18086/realms/nyx"
+    },
+    {
+      "id": "corp-idp",
+      "name": "Corporate IdP",
+      "issuer": "https://idp.isbank/realms/plateau"
+    }
+  ],
+  "tokenTargets": [],
+  "apiKeys": [],
+  "tlsProfiles": [],
+  "permissions": [],
+  "authorizationRuntime": {
+    "strategy": "NO_AUTHORIZATION"
+  },
+  "environments": [
+    {
+      "id": "env-ddcfc9eb-2554-4b11-93ad-d2ca629b7514",
+      "name": "INT",
+      "slug": "vega-int",
+      "overrides": {
+        "trustedIssuers": {},
+        "tokenTargets": {},
+        "serviceCallUrls": {},
+        "operationBaseUrls": {}
+      },
+      "helm": {
+        "tlsEnabled": true,
+        "tlsSecretName": "tls-secret",
+        "imageRepository": "registry.isbank/plateau/gaia-bfa",
+        "imageTag": "1.4.2-SNAPSHOT",
+        "ingressHost": "new-integration-solution.kargotakip.kube.intisbank"
+      }
+    },
+    {
+      "id": "env-584d5fc8-1958-4926-9f76-17bf97709f14",
+      "name": "UAT",
+      "slug": "vega-uat",
+      "overrides": {
+        "trustedIssuers": {},
+        "tokenTargets": {},
+        "serviceCallUrls": {},
+        "operationBaseUrls": {}
+      },
+      "helm": {
+        "tlsEnabled": true,
+        "tlsSecretName": "tls-secret",
+        "imageRepository": "registry.isbank/plateau/gaia-bfa",
+        "imageTag": "1.4.1",
+        "ingressHost": "new-integration-solution.kargotakip.kube.uatisbank"
+      }
+    },
+    {
+      "id": "env-8fcea925-20af-4646-90b9-f73b7c4185b5",
+      "name": "PROD",
+      "slug": "vega-prod",
+      "overrides": {
+        "trustedIssuers": {},
+        "tokenTargets": {},
+        "serviceCallUrls": {},
+        "operationBaseUrls": {}
+      },
+      "helm": {
+        "tlsEnabled": true,
+        "tlsSecretName": "tls-secret",
+        "ingressHost": "new-integration-solution.kargotakip.kube.isbank"
+      }
+    }
+  ],
+  "pdpProfiles": [],
+  "policyYaml": "",
+  "importedRoutes": [],
+  "createdAt": "2026-08-11T08:50:53.270Z",
+  "updatedAt": "2026-08-11T13:08:41.558Z"
+}
