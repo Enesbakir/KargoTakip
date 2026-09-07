@@ -182,7 +182,7 @@
         "ingressPath": "/new-integration-solution",
         "ingressHost": "intisbank",
         "kafkaAudit": {
-          "enabled": true
+          "enabled": false
         },
         "kafkaBrokers": "broker",
         "kafkaTopicsAudit": "topic"
@@ -377,5 +377,5 @@
   "policyYaml": "",
   "importedRoutes": [],
   "createdAt": "2026-09-03T13:17:57.277Z",
-  "updatedAt": "2026-09-07T06:15:23.171Z"
+  "updatedAt": "2026-09-07T06:16:11.237Z"
 }
