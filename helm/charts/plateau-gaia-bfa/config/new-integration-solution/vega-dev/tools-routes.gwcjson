@@ -66,9 +66,11 @@
             }
           },
           {
-            "setHeader": {
-              "name": "test",
-              "simple": ""
+            "kamelet": {
+              "name": "plateau-upstream-headers-auth-action",
+              "parameters": {
+                "valueRefs": "{\"test\":\"FILE:/mnt/gaia-secrets:NEW_INTEGRATION_SOLUTION__NEW_SECRET_1\"}"
+              }
             }
           },
           {
