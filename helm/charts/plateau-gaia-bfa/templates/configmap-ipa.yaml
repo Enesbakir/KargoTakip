@@ -1,0 +1,49 @@
+{{- /* IAM Policy Agent (IPA) sidecar configuration — the agent's own application.yaml.        */ -}}
+{{- /* Split out of configmap.yaml (which stays the GWCJSON + trustcerts document set) so the  */ -}}
+{{- /* deployment can hash exactly this file for its rollout annotation, mirroring the         */ -}}
+{{- /* plateau-edge-ipa reference chart's templates/configmap-ipa.yaml.                        */ -}}
+{{- $ipaCfg := .Values.ipa | default dict }}
+{{- if $ipaCfg.enabled }}
+{{- $policy := (($ipaCfg.pdp) | default dict).policy | default dict }}
+{{- $domainId := $policy.domainId | default .Values.config.solutionSlug }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plateau-gaia-bfa.fullname" . }}-ipa-application-config
+  labels:
+    {{- include "plateau-gaia-bfa.labels" . | nindent 4 }}
+data:
+  application.yaml: |
+    rally:
+      # This solution has no central "authorization" tenant/security-mapping service to talk
+      # to (rally.services.commons's RallyServiceDiscoveryAutoConfiguration otherwise resolves
+      # it via "env" and fails: RoundRobinLoadBalancer "No servers available for service:
+      # authorization", then a NullPointerException-wrapping IllegalArgumentException on every
+      # scheduled DefaultTenantRegistryProvider/DefaultClientCacheSecurityProvider run). Both
+      # off, matching the plateau-edge-ipa reference chart and IPA's own application-local.properties.
+      security:
+        tenancy:
+          tenant-registry: none
+      caching:
+        client:
+          security:
+            provider:
+              type: none
+    plateau:
+      iampolicyagent:
+        authz:
+          strategy: PLATEAU_PDP
+        pdp:
+          policy:
+            domain-id: {{ $domainId }}
+            policy-package-id: {{ $policy.policyPackageId | default (printf "%s-policy-package" $domainId) }}
+            {{- with $policy.packageVersion }}
+            package-version: {{ . }}
+            {{- end }}
+    spring:
+      threads:
+        virtual:
+          enabled: true
+      jmx:
+        enabled: true
+{{- end }}

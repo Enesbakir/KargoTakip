@@ -1,0 +1,367 @@
+{
+  "formatVersion": "2.0",
+  "id": "solution-33ea4a17-b4e3-4b4e-ad9a-126f72b4801d",
+  "name": "New integration solution",
+  "slug": "new-integration-solution",
+  "description": "",
+  "gateway": {
+    "id": "new-integration-solution-gaia",
+    "name": "GaiA Backend For AI"
+  },
+  "entryPoints": [
+    {
+      "id": "entrypoint-6be5d41b-d982-4467-8f26-051de2571141",
+      "name": "Expose the upstream service as an MCP tool",
+      "description": "Vadesiz hesap durumu sorgulama ve güncelleme işlemlerini AI ajanına MCP tool olarak sunar.",
+      "version": "1.0.0",
+      "protocol": "MCP_STREAMABLE",
+      "path": "/mcp/account/servicing",
+      "authType": "OIDC_TOKEN",
+      "trustedIssuerRefs": [
+        "issuer-cb1f9a24-2a06-422d-8413-ef532f820cbb"
+      ],
+      "authorizationMode": "NO_AUTHORIZATION",
+      "localPermissions": [],
+      "rateLimit": {
+        "enabled": false,
+        "requestLimit": 60,
+        "period": "1m",
+        "limitBy": "CLIENT_IP"
+      },
+      "modelConfig": {
+        "enabled": false,
+        "provider": "DEFAULT",
+        "modelId": "",
+        "reasoning": false
+      },
+      "operations": [
+        {
+          "id": "operation-a1c90f70-48ff-4295-82f9-f098321d2299",
+          "name": "retrieve_current_account",
+          "description": "Bir vadesiz hesabın güncel durumunu ve bakiyesini sorgular. Müşteri bakiyesini/hesap durumunu öğrenmek istediğinde kullanılır",
+          "restPath": "/new-operation/{id}",
+          "restMethods": [
+            "GET"
+          ],
+          "soapOperationName": "",
+          "soapAction": "",
+          "wsdlUrl": "",
+          "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"crId\": {\n      \"type\": \"string\",\n      \"description\": \"dd\"\n    }\n  },\n  \"required\": [\n    \"crId\"\n  ],\n  \"additionalProperties\": false\n}",
+          "outputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"currentAccountCrId\": {\n      \"type\": \"string\",\n      \"description\": \"ddddd\"\n    },\n    \"accountStatus\": {\n      \"example\": \"ACTIVE\",\n      \"type\": \"string\",\n      \"description\": \"ddd\",\n      \"enum\": [\n        \"ACTIVE\",\n        \"BLOCKED\",\n        \"CLOSED\",\n        \"DORMANT\"\n      ]\n    },\n    \"availableBalance\": {\n      \"type\": \"number\",\n      \"description\": \"dddd\",\n      \"format\": \"double\"\n    }\n  },\n  \"additionalProperties\": false\n}",
+          "timeoutMs": 30000,
+          "maxResponseSize": 50000,
+          "truncateOnOverflow": false,
+          "streamable": false,
+          "streamFormat": "SSE",
+          "routingMode": "COMPOSED",
+          "baseUrl": "",
+          "propagateUri": true,
+          "fallbackRouteId": "",
+          "quota": {
+            "enabled": false,
+            "period": "1m",
+            "requestLimit": 60,
+            "tokenLimit": 0
+          },
+          "circuitBreaker": {
+            "enabled": false,
+            "failureRateThreshold": 50,
+            "minimumCalls": 10,
+            "permittedCallsInHalfOpenState": 5,
+            "slidingWindowSize": 20,
+            "waitDurationOpenStateSeconds": 30
+          },
+          "pdp": {
+            "actionRef": "entrypoint:operation-a1c90f70-48ff-4295-82f9-f098321d2299",
+            "actionId": "entrypoint:operation-a1c90f70-48ff-4295-82f9-f098321d2299",
+            "resourceType": "GAIA_OPERATION",
+            "resourceIdSource": "",
+            "resourceIdSourceKind": "path"
+          },
+          "calls": [
+            {
+              "id": "call-b817debf-349b-420f-aa0e-7800d8eafbbd",
+              "name": "retrieve_current_account",
+              "kind": "REST",
+              "url": "http://host.docker.internal:8080/current-account/{crId}",
+              "method": "GET",
+              "headers": [],
+              "requestParameters": [
+                {
+                  "id": "param-7a6f4645-9b52-4dd7-b146-91f747011b82",
+                  "location": "PATH",
+                  "name": "crId",
+                  "value": "${input.crId}",
+                  "required": true
+                }
+              ],
+              "claimMappings": [
+                {
+                  "id": "claim-d13e9cdb-7409-4952-9e36-f8caa00f0996",
+                  "claim": "sub",
+                  "targetField": "userId",
+                  "valueType": "string",
+                  "required": false
+                }
+              ],
+              "bodyTemplate": "${input}",
+              "soapAction": "",
+              "responseFormat": "JSON",
+              "timeoutMs": 10000,
+              "requestSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"crId\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"crId\"\n  ],\n  \"additionalProperties\": false\n}",
+              "responseSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"currentAccountCrId\": {\n      \"type\": \"string\"\n    },\n    \"accountStatus\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"ACTIVE\",\n        \"BLOCKED\",\n        \"CLOSED\",\n        \"DORMANT\"\n      ],\n      \"example\": \"ACTIVE\"\n    },\n    \"availableBalance\": {\n      \"type\": \"number\",\n      \"format\": \"double\"\n    }\n  }\n}",
+              "upstreamAuth": {
+                "method": "tokenPassthrough"
+              }
+            }
+          ],
+          "executionStages": [
+            {
+              "id": "stage-de1305da-a033-4f68-813a-549f423e0f97",
+              "name": "Service calls",
+              "mode": "SEQUENTIAL",
+              "callIds": [
+                "call-b817debf-349b-420f-aa0e-7800d8eafbbd"
+              ],
+              "stopOnException": true
+            }
+          ],
+          "response": {
+            "mode": "raw",
+            "mappings": [],
+            "template": "{\"result\": ${exchangeProperty.response}}"
+          }
+        }
+      ],
+      "resources": []
+    }
+  ],
+  "trustedIssuers": [
+    {
+      "id": "issuer-cb1f9a24-2a06-422d-8413-ef532f820cbb",
+      "name": "ıam",
+      "issuer": "http://user.idp.iam.local:18086/realms/nyx"
+    }
+  ],
+  "tokenTargets": [],
+  "apiKeys": [],
+  "secrets": [],
+  "fieldScopes": {},
+  "tlsProfiles": [],
+  "permissions": [],
+  "authorizationRuntime": {
+    "strategy": "NO_AUTHORIZATION"
+  },
+  "environments": [
+    {
+      "id": "env-c8d714c7-cd71-433a-8b98-f540c3a7fda7",
+      "name": "INT",
+      "slug": "vega-int",
+      "overrides": {
+        "trustedIssuers": {},
+        "tokenTargets": {},
+        "serviceCallUrls": {},
+        "operationBaseUrls": {},
+        "secretBindings": {},
+        "fields": {}
+      },
+      "helm": {
+        "tlsEnabled": true,
+        "tlsSecretName": "tls-secret",
+        "imageRepository": "registry.isbank/plateau/gaia-bfa",
+        "imageTag": "1.4.2-SNAPSHOT",
+        "ingressPath": "/new-integration-solution",
+        "ingressHost": "intisbank"
+      }
+    },
+    {
+      "id": "env-49fb3350-c76a-4376-93c5-eaddb51974ec",
+      "name": "UAT",
+      "slug": "vega-uat",
+      "overrides": {
+        "trustedIssuers": {},
+        "tokenTargets": {},
+        "serviceCallUrls": {},
+        "operationBaseUrls": {},
+        "secretBindings": {},
+        "fields": {}
+      },
+      "helm": {
+        "tlsEnabled": true,
+        "tlsSecretName": "tls-secret",
+        "imageRepository": "registry.isbank/plateau/gaia-bfa",
+        "imageTag": "1.4.1",
+        "ingressPath": "/new-integration-solution",
+        "ingressHost": "uatisbank"
+      }
+    },
+    {
+      "id": "env-2f54745c-4bba-4057-aae8-da69ee74589c",
+      "name": "PROD",
+      "slug": "vega-prod",
+      "overrides": {
+        "trustedIssuers": {},
+        "tokenTargets": {},
+        "serviceCallUrls": {},
+        "operationBaseUrls": {},
+        "secretBindings": {},
+        "fields": {}
+      },
+      "helm": {
+        "tlsEnabled": true,
+        "tlsSecretName": "tls-secret",
+        "ingressPath": "/new-integration-solution",
+        "ingressHost": "isbank"
+      }
+    },
+    {
+      "id": "env-7848f177-ace9-4fa0-889e-c2740ba6034d",
+      "name": "TITAN UAT",
+      "slug": "titan-uat",
+      "overrides": {
+        "trustedIssuers": {},
+        "tokenTargets": {},
+        "serviceCallUrls": {},
+        "operationBaseUrls": {},
+        "secretBindings": {},
+        "fields": {}
+      },
+      "helm": {
+        "tlsEnabled": true,
+        "tlsSecretName": "tls-secret",
+        "imageRepository": "registry.isbank/plateau/gaia-bfa",
+        "imageTag": "1.4.1",
+        "ingressPath": "/new-integration-solution",
+        "ingressHost": "uatisbank"
+      }
+    },
+    {
+      "id": "env-bc5c95e9-1953-40b7-aaf8-78a1ae679ea1",
+      "name": "TITAN PROD",
+      "slug": "titan-prod",
+      "overrides": {
+        "trustedIssuers": {},
+        "tokenTargets": {},
+        "serviceCallUrls": {},
+        "operationBaseUrls": {},
+        "secretBindings": {},
+        "fields": {}
+      },
+      "helm": {
+        "tlsEnabled": true,
+        "tlsSecretName": "tls-secret",
+        "ingressPath": "/new-integration-solution",
+        "ingressHost": "isbank"
+      }
+    },
+    {
+      "id": "env-fbe2f40a-14eb-49f9-ab3d-af9990b9fa8a",
+      "name": "DEV",
+      "slug": "vega-dev",
+      "overrides": {
+        "trustedIssuers": {},
+        "tokenTargets": {},
+        "serviceCallUrls": {},
+        "operationBaseUrls": {},
+        "secretBindings": {},
+        "fields": {}
+      },
+      "helm": {
+        "tlsEnabled": true,
+        "tlsSecretName": "tls-secret",
+        "imageRepository": "registry.isbank/plateau/gaia-bfa",
+        "imageTag": "1.4.2-SNAPSHOT",
+        "ingressPath": "/new-integration-solution",
+        "ingressHost": "devisbank"
+      }
+    }
+  ],
+  "targetClusters": [
+    "vega"
+  ],
+  "pdpProfiles": [
+    {
+      "name": "OIDC_AGENT",
+      "match": [
+        {
+          "authType": "OIDC_TOKEN"
+        },
+        {
+          "claim": "on_behalf_of",
+          "exists": true
+        }
+      ],
+      "subject": {
+        "type": "static:AGENT",
+        "id": "principal:subject",
+        "properties": {
+          "onBehalfOfSub": "claim:on_behalf_of.sub",
+          "acr": "claim:acr",
+          "amr": "claim-list:amr",
+          "scopes": "claim-list:scopes | claim-list:scope",
+          "purpose": "claim:purpose",
+          "authorizationDetails": "claim:authorization_details"
+        }
+      },
+      "action": {
+        "name": "generate:action"
+      },
+      "resource": {
+        "type": "generate:resource-type",
+        "id": "generate:resource-id",
+        "properties": {
+          "ownerId": "claim:on_behalf_of.sub | claim:owner_id",
+          "status": "header:X-Resource-Status"
+        }
+      },
+      "context": {
+        "tenant": {
+          "id": "claim:on_behalf_of.iss | issuer:realm"
+        },
+        "channel": {
+          "id": "principal:client"
+        }
+      }
+    },
+    {
+      "name": "OIDC_USER",
+      "match": {
+        "authType": "OIDC_TOKEN"
+      },
+      "subject": {
+        "type": "static:USER",
+        "id": "principal:subject",
+        "properties": {
+          "acr": "claim:acr",
+          "amr": "claim-list:amr",
+          "scopes": "claim-list:scopes | claim-list:scope",
+          "purpose": "claim:purpose",
+          "authorizationDetails": "claim:authorization_details"
+        }
+      },
+      "action": {
+        "name": "generate:action"
+      },
+      "resource": {
+        "type": "generate:resource-type",
+        "id": "generate:resource-id",
+        "properties": {
+          "ownerId": "claim:owner_id",
+          "status": "header:X-Resource-Status"
+        }
+      },
+      "context": {
+        "tenant": {
+          "id": "issuer:realm"
+        },
+        "channel": {
+          "id": "principal:client"
+        }
+      }
+    }
+  ],
+  "policyYaml": "",
+  "importedRoutes": [],
+  "createdAt": "2026-09-03T13:17:57.277Z",
+  "updatedAt": "2026-09-07T06:13:39.139Z"
+}

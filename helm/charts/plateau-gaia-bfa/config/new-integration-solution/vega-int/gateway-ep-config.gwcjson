@@ -1,0 +1,130 @@
+{
+  "spec": "gaia-catalog/1.0",
+  "generated_at": "2026-09-07T06:13:54.146Z",
+  "gateway": {
+    "id": "new-integration-solution-gaia",
+    "name": "GaiA Backend For AI",
+    "base_url": "https://intisbank/new-integration-solution"
+  },
+  "gateway_errors": [
+    {
+      "status": 400,
+      "code": "BAD_REQUEST",
+      "description": "Invalid request payload or parameters"
+    },
+    {
+      "status": 401,
+      "code": "UNAUTHORIZED",
+      "description": "Authentication required"
+    },
+    {
+      "status": 403,
+      "code": "FORBIDDEN",
+      "description": "Policy decision denied access"
+    },
+    {
+      "status": 429,
+      "code": "TOO_MANY_REQUESTS",
+      "description": "Rate limit exceeded"
+    },
+    {
+      "status": 500,
+      "code": "INTERNAL_ERROR",
+      "description": "Internal gateway error"
+    },
+    {
+      "status": 502,
+      "code": "BAD_GATEWAY",
+      "description": "Upstream service unavailable"
+    }
+  ],
+  "entry_points": [
+    {
+      "id": "entrypoint-6be5d41b-d982-4467-8f26-051de2571141",
+      "name": "Expose the upstream service as an MCP tool",
+      "description": "Vadesiz hesap durumu sorgulama ve güncelleme işlemlerini AI ajanına MCP tool olarak sunar.",
+      "version": "1.0.0",
+      "protocol": "MCP_STREAMABLE",
+      "consumerEndpoint": {
+        "path": "/mcp/account/servicing"
+      },
+      "auth": {
+        "type": "OIDC_TOKEN",
+        "mode": "NO_AUTHORIZATION",
+        "trustedIssuerRefs": [
+          "issuer-cb1f9a24-2a06-422d-8413-ef532f820cbb"
+        ]
+      },
+      "tools": [
+        {
+          "id": "operation-a1c90f70-48ff-4295-82f9-f098321d2299",
+          "name": "retrieve_current_account",
+          "description": "Bir vadesiz hesabın güncel durumunu ve bakiyesini sorgular. Müşteri bakiyesini/hesap durumunu öğrenmek istediğinde kullanılır",
+          "routing": {
+            "route_id": "route-operation-a1c90f70-48ff-4295-82f9-f098321d2299"
+          },
+          "constraints": {
+            "timeout_ms": 30000,
+            "max_response_size": 50000,
+            "truncate_on_overflow": false
+          },
+          "input": {
+            "type": "json-schema",
+            "format": "application/schema+json",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "crId": {
+                  "type": "string",
+                  "description": "dd"
+                }
+              },
+              "required": [
+                "crId"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "output": {
+            "type": "json-schema",
+            "format": "application/schema+json",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "currentAccountCrId": {
+                  "type": "string",
+                  "description": "ddddd"
+                },
+                "accountStatus": {
+                  "example": "ACTIVE",
+                  "type": "string",
+                  "description": "ddd",
+                  "enum": [
+                    "ACTIVE",
+                    "BLOCKED",
+                    "CLOSED",
+                    "DORMANT"
+                  ]
+                },
+                "availableBalance": {
+                  "type": "number",
+                  "description": "dddd",
+                  "format": "double"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ],
+      "filters": [
+        {
+          "name": "logging",
+          "args": {
+            "level": "INFO"
+          }
+        }
+      ]
+    }
+  ]
+}

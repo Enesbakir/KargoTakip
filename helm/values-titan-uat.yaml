@@ -1,0 +1,48 @@
+# Environment values for "TITAN UAT" (titan-uat).
+# One top-level block per solution; the key must equal the dependency alias in
+# helm/Chart.yaml. A republish rewrites only the keys it generates — keys you add
+# inside a solution block, and everything outside it, are preserved.
+# Secrets are provided via Kubernetes Secrets, never through this file.
+
+new-integration-solution:
+  enabled: false
+  nameOverride: new-integration-solution
+  config:
+    solutionSlug: new-integration-solution
+    environmentSlug: titan-uat
+  image:
+    repository: registry.isbank/plateau/gaia-bfa
+    tag: 1.4.1
+  env:
+    NYX_ENABLED: "false"
+    PLATEAU_GAIA_AUTHORIZATION_STRATEGY: NO_AUTHORIZATION
+  ipa:
+    enabled: false
+    pdp:
+      policy:
+        domainId: new-integration-solution
+        policyPackageId: new-integration-solution-policy-package
+        packageVersion: ""
+      policies: {}
+  redis:
+    enabled: false
+  ingress:
+    enabled: true
+    className: ""
+    host: uatisbank
+    paths:
+      - path: /new-integration-solution
+        pathType: Prefix
+    annotations:
+      haproxy.router.openshift.io/rewrite-target: /
+    tls:
+      enabled: true
+      secretName: tls-secret
+  existingSecret: ""
+  secrets:
+    conjur:
+      enabled: false
+    kafka:
+      username: ""
+      password: ""
+    secret-key-values: {}

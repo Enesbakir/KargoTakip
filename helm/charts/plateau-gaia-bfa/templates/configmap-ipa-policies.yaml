@@ -1,0 +1,21 @@
+{{- /* PDP policy files for the IPA sidecar, built from ipa.pdp.policies                       */ -}}
+{{- /* ("<filename>.yaml" -> policy YAML content). The generator embeds the solution's policy  */ -}}
+{{- /* into every generated values-<solution>-<environment>.yaml block, so the chart carries   */ -}}
+{{- /* no policy files of its own any more.                                                    */ -}}
+{{- /* Mounted as a DIRECTORY at /app/resources/pdp/policies: IPA's PolicyPackageLoader scans  */ -}}
+{{- /* the directory, so this mount must never gain a subPath or items list.                   */ -}}
+{{- $ipaCfg := .Values.ipa | default dict }}
+{{- $policies := (($ipaCfg.pdp) | default dict).policies | default dict }}
+{{- if and $ipaCfg.enabled $policies }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plateau-gaia-bfa.fullname" . }}-ipa-pdp-policies
+  labels:
+    {{- include "plateau-gaia-bfa.labels" . | nindent 4 }}
+data:
+{{- range $name, $content := $policies }}
+  {{ $name }}: |-
+{{ $content | indent 4 }}
+{{- end }}
+{{- end }}

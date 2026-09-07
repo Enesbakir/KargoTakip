@@ -1,0 +1,10 @@
+{
+  "trustedIssuers": [
+    {
+      "id": "issuer-cb1f9a24-2a06-422d-8413-ef532f820cbb",
+      "name": "ıam",
+      "issuer": "http://user.idp.iam.local:18086/realms/nyx"
+    }
+  ],
+  "tokenTargets": []
+}
