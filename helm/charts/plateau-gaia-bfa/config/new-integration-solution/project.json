@@ -162,7 +162,16 @@
         "tokenTargets": {},
         "serviceCallUrls": {},
         "operationBaseUrls": {},
-        "secretBindings": {},
+        "secretBindings": {
+          "kafka-sasl-username": {
+            "source": "conjurFile",
+            "path": "Vault/Conjur"
+          },
+          "kafka-sasl-password": {
+            "source": "conjurFile",
+            "path": "Vault/Conjur"
+          }
+        },
         "fields": {}
       },
       "helm": {
@@ -171,7 +180,12 @@
         "imageRepository": "registry.isbank/plateau/gaia-bfa",
         "imageTag": "1.4.2-SNAPSHOT",
         "ingressPath": "/new-integration-solution",
-        "ingressHost": "intisbank"
+        "ingressHost": "intisbank",
+        "kafkaAudit": {
+          "enabled": true
+        },
+        "kafkaBrokers": "broker",
+        "kafkaTopicsAudit": "topic"
       }
     },
     {
@@ -363,5 +377,5 @@
   "policyYaml": "",
   "importedRoutes": [],
   "createdAt": "2026-09-03T13:17:57.277Z",
-  "updatedAt": "2026-09-07T06:13:39.139Z"
+  "updatedAt": "2026-09-07T06:15:23.171Z"
 }
