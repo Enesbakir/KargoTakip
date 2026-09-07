@@ -1,0 +1,278 @@
+{{- $ipaCfg := .Values.ipa | default dict }}
+{{- $ipaPolicies := (($ipaCfg.pdp) | default dict).policies | default dict }}
+{{- $hasPolicies := gt (len $ipaPolicies) 0 }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plateau-gaia-bfa.fullname" . }}
+  labels:
+    {{- include "plateau-gaia-bfa.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      {{- include "plateau-gaia-bfa.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plateau-gaia-bfa.appSelectorLabels" . | nindent 8 }}
+      annotations:
+        # Config change -> helm upgrade restarts pods (same glob helper as the ConfigMap).
+        checksum/config: {{ (.Files.Glob (include "plateau-gaia-bfa.configGlob" .)).AsConfig | sha256sum }}
+        # Secret change (kafka creds, secret-key-values) -> helm upgrade restarts pods.
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- if $ipaCfg.enabled }}
+        # IPA has no hot-reload: a policy-only or strategy-only change must still roll the pod,
+        # or the sidecar silently keeps serving the previous decision. Both IPA ConfigMaps are
+        # pure .Values renders now, so hashing the rendered templates covers them exactly.
+        checksum/ipa-config: {{ include (print $.Template.BasePath "/configmap-ipa.yaml") . | sha256sum }}
+        checksum/ipa-policies: {{ include (print $.Template.BasePath "/configmap-ipa-policies.yaml") . | sha256sum }}
+        {{- end }}
+    spec:
+      {{- if and .Values.serviceAccount .Values.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.serviceAccount.name | default (printf "%s-sa" .Release.Namespace) }}
+      {{- end }}
+      {{- if or .Values.trustcerts.enabled .Values.secrets.conjur.enabled }}
+      initContainers:
+        {{- if .Values.trustcerts.enabled }}
+        - name: import-crt-to-cacerts
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            limits:   { cpu: 1000m, memory: 512Mi }
+            requests: { cpu: 50m,   memory: 256Mi }
+          command:
+            - /bin/sh
+            - -c
+            - |
+              mkdir -p /tmp/certs
+              cp $JAVA_HOME/lib/security/cacerts /tmp/certs/cacerts
+              chmod 777 /tmp/certs/cacerts
+              for cert in /tmp/inline-certs/*.crt /tmp/inline-certs/*.cer /tmp/inline-certs/*.pem \
+                          /tmp/configmap-certs/*.crt /tmp/configmap-certs/*.cer /tmp/configmap-certs/*.pem; do
+                [ -e "$cert" ] || continue
+                alias=$(basename "$cert" | sed 's/[^a-zA-Z0-9]/_/g')
+                if ! keytool -list -keystore /tmp/certs/cacerts -storepass changeit -alias "$alias" >/dev/null 2>&1; then
+                  keytool -importcert -trustcacerts -noprompt -storepass changeit \
+                    -alias "$alias" -file "$cert" -keystore /tmp/certs/cacerts
+                fi
+              done
+          volumeMounts:
+            {{- if .Values.trustcerts.certs }}
+            - name: ca-certs-inline
+              mountPath: /tmp/inline-certs/
+            {{- end }}
+            {{- range $configMapName, $keyName := .Values.trustcerts.configmaps }}
+            - name: {{ $configMapName | replace "." "-" | replace "_" "-" | lower }}-cert
+              mountPath: /tmp/configmap-certs/{{ $configMapName }}
+              subPath: {{ $keyName }}
+            {{- end }}
+            - name: certsdirectory
+              mountPath: /tmp/certs
+        {{- end }}
+        {{- if .Values.secrets.conjur.enabled }}
+        - name: authenticator
+          image: "{{ .Values.secrets.conjur.image }}:{{ .Values.secrets.conjur.tag }}"
+          envFrom:
+            - configMapRef:
+                name: conjur-connection-cm
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: CONTAINER_MODE
+              value: init
+            - name: SECRETS_DESTINATION
+              value: k8s_secrets
+            - name: K8S_SECRETS
+              value: {{ include "plateau-gaia-bfa.fullname" . }}-secret
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: plateau-gaia-bfa
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+          env:
+            {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- if and $ipaCfg.enabled (not (hasKey .Values.env "PDP_BASE_URL")) }}
+            - name: PDP_BASE_URL
+              value: {{ printf "http://localhost:%v" ($ipaCfg.service.targetPort | default 8080) | quote }}
+            {{- end }}
+            {{- if or .Values.redis.enabled .Values.redis.host }}
+            - name: REDIS_HOST
+              value: {{ if .Values.redis.enabled }}{{ include "plateau-gaia-bfa.redisFullname" . }}{{ else }}{{ .Values.redis.host }}{{ end }}
+            - name: REDIS_PORT
+              value: {{ if .Values.redis.enabled }}"6379"{{ else }}{{ .Values.redis.port | default 6379 | quote }}{{ end }}
+            {{- if .Values.redis.existingSecret }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.redis.existingSecret }}
+                  key: password
+                  optional: true
+            {{- end }}
+            {{- end }}
+            {{- $kafka := .Values.secrets.kafka | default dict }}
+            {{- if $kafka.username }}
+            - name: KAFKA_SASL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "plateau-gaia-bfa.fullname" . }}-secret
+                  key: KAFKA_SASL_USERNAME
+                  optional: true
+            {{- end }}
+            {{- if $kafka.password }}
+            - name: KAFKA_SASL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "plateau-gaia-bfa.fullname" . }}-secret
+                  key: KAFKA_SASL_PASSWORD
+                  optional: true
+            {{- end }}
+          {{- $extra := index .Values.secrets "secret-key-values" | default dict }}
+          {{- if or .Values.existingSecret $extra }}
+          envFrom:
+            {{- if .Values.existingSecret }}
+            - secretRef:
+                name: {{ .Values.existingSecret }}
+                optional: true
+            {{- end }}
+            {{- if $extra }}
+            - secretRef:
+                name: {{ include "plateau-gaia-bfa.fullname" . }}-secret
+                optional: true
+            {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          startupProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            periodSeconds: 5
+            failureThreshold: 30
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+            seccompProfile: { type: RuntimeDefault }
+          volumeMounts:
+            - { name: gwc-config, mountPath: /config, readOnly: true }
+            - { name: tmp, mountPath: /tmp }
+            {{- if $extra }}
+            {{- /* Conjur-populated (or operator-supplied) secrets as FILES, so gwcjson can carry
+                   a `FILE:/mnt/gaia-secrets:<KEY>` reference instead of a plaintext credential.
+                   Main container only: the IPA sidecar has no business reading these. */}}
+            - { name: gaia-secrets, mountPath: /mnt/gaia-secrets, readOnly: true }
+            {{- end }}
+            {{- if .Values.trustcerts.enabled }}
+            - name: certsdirectory
+              mountPath: /usr/lib/jvm/jre/lib/security/cacerts
+              subPath: cacerts
+            {{- end }}
+        {{- if $ipaCfg.enabled }}
+        - name: iam-policy-agent
+          image: "{{ $ipaCfg.image.repository }}:{{ $ipaCfg.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ $ipaCfg.image.pullPolicy | default "IfNotPresent" }}
+          env:
+            # Required by the rally BootRunner to pick its "release" logback profile (console-only).
+            # Without these, rallyPlatform/rallyCountry resolve empty, BootRunner falls back to a
+            # logback config that rolls file logs under /var/log/rally — a path that doesn't exist
+            # in this container (no volume mounted there) — and the agent fails to start.
+            - name: RALLY_COUNTRY
+              value: {{ $ipaCfg.rallyCountry | default "TR" | quote }}
+            - name: RALLY_PLATFORM
+              value: {{ $ipaCfg.rallyPlatform | default "banka" | quote }}
+            - name: RALLY_PROFILE
+              value: {{ $ipaCfg.rallyProfile | default "banka" | quote }}
+            {{- range $k, $v := $ipaCfg.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          ports:
+            - name: ipa-http
+              containerPort: {{ $ipaCfg.service.targetPort | default 8080 }}
+          {{- with $ipaCfg.startupProbe }}
+          startupProbe: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $ipaCfg.livenessProbe }}
+          livenessProbe: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $ipaCfg.readinessProbe }}
+          readinessProbe: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources: {{- toYaml ($ipaCfg.resources | default dict) | nindent 12 }}
+          volumeMounts:
+            - name: ipa-application-config
+              mountPath: /opt/rally/iampolicyagent-service/application.yaml
+              subPath: application.yaml
+              readOnly: true
+            {{- if $hasPolicies }}
+            - name: ipa-pdp-policies
+              mountPath: /app/resources/pdp/policies
+            {{- end }}
+        {{- end }}
+      volumes:
+        {{- $extra := index .Values.secrets "secret-key-values" | default dict }}
+        {{- if $extra }}
+        - name: gaia-secrets
+          secret:
+            secretName: {{ include "plateau-gaia-bfa.fullname" . }}-secret
+        {{- end }}
+        - name: gwc-config
+          configMap:
+            name: {{ include "plateau-gaia-bfa.fullname" . }}-config
+        - name: tmp
+          emptyDir: {}
+        {{- if $ipaCfg.enabled }}
+        - name: ipa-application-config
+          configMap:
+            name: {{ include "plateau-gaia-bfa.fullname" . }}-ipa-application-config
+        {{- if $hasPolicies }}
+        - name: ipa-pdp-policies
+          configMap:
+            name: {{ include "plateau-gaia-bfa.fullname" . }}-ipa-pdp-policies
+        {{- end }}
+        {{- end }}
+        {{- if .Values.trustcerts.enabled }}
+        {{- if .Values.trustcerts.certs }}
+        - name: ca-certs-inline
+          configMap:
+            name: {{ include "plateau-gaia-bfa.fullname" . }}-trusted-certs
+            items:
+              {{- range $certName, $certContent := .Values.trustcerts.certs }}
+              - key: {{ $certName }}.crt
+                path: {{ $certName }}.crt
+              {{- end }}
+        {{- end }}
+        {{- range $configMapName, $keyName := .Values.trustcerts.configmaps }}
+        - name: {{ $configMapName | replace "." "-" | replace "_" "-" | lower }}-cert
+          configMap:
+            name: {{ $configMapName }}
+            items:
+              - key: {{ $keyName }}
+                path: {{ $keyName }}
+        {{- end }}
+        - name: certsdirectory
+          emptyDir: {}
+        {{- end }}

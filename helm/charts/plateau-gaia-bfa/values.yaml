@@ -1,0 +1,182 @@
+# Generic defaults for one GaiA instance. Environment-specific values come from
+# the generated values-<solution>-<environment>.yaml fragments (generator-owned).
+# No secret values live in any values file: secrets are provided via
+# Kubernetes/OpenShift Secrets (existingSecret, redis.existingSecret, ingress TLS).
+
+# Umbrella installs set nameOverride to the solution slug (one aliased
+# dependency per solution) so instances in the same release never collide.
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: gaia-bfa
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicas: 2
+containerPort: 8585
+
+# Which config/<solutionSlug>/<environmentSlug>/ directory inside the chart
+# feeds the ConfigMap. Both are required — the render fails when empty.
+config:
+  solutionSlug: ""
+  environmentSlug: ""
+
+# Optional Kubernetes/OpenShift Secret injected as env vars (GaiA resolves
+# ${ENV} references in tls-profiles.gwcjson from the environment).
+existingSecret: ""
+
+# name->value map, injected verbatim into the container.
+# The PLATEAU_GAIA_KAFKA_* entries below are the fixed producer/security tuning — identical for
+# every solution, never asked of the user. User-entered Kafka settings (brokers, audit topic,
+# SASL credentials) arrive from the generated values-<env>.yaml env map and Secret instead.
+# The JAAS/truststore lines reference env vars (KAFKA_SASL_*, KAFKA_TRUSTSTORE_*), never
+# literal secret values; GaiA resolves the ${VAR:default} syntax at runtime.
+env:
+  NYX_ENABLED: "false"
+  # PDP authorization decision detail (PEP AuthZEN request/decision, deny reasons) — on by
+  # default in every environment so a deploy is immediately diagnosable without a manual edit.
+  LOGGING_LEVEL_COM_SOFTTECH_PLATEAU_GAIAMCPGW_GATEWAY_SECURITY_PEP: "DEBUG"
+  PLATEAU_GAIA_KAFKA_PRODUCER_MAXREQUESTSIZE: "1048576"
+  PLATEAU_GAIA_KAFKA_PRODUCER_COMPRESSIONTYPE: "snappy"
+  PLATEAU_GAIA_KAFKA_PRODUCER_ACKS: "all"
+  PLATEAU_GAIA_KAFKA_PRODUCER_LINGERMS: "10"
+  PLATEAU_GAIA_KAFKA_PRODUCER_BATCHSIZE: "65536"
+  PLATEAU_GAIA_KAFKA_PRODUCER_BUFFERMEMORY: "67108864"
+  PLATEAU_GAIA_KAFKA_PRODUCER_RETRIES: "3"
+  PLATEAU_GAIA_KAFKA_PRODUCER_REQUESTTIMEOUTMS: "5000"
+  PLATEAU_GAIA_KAFKA_PRODUCER_DELIVERYTIMEOUTMS: "15000"
+  PLATEAU_GAIA_KAFKA_PRODUCER_MAXBLOCKMS: "5000"
+  PLATEAU_GAIA_KAFKA_SECURITY_SSLTRUSTSTORETYPE: "JKS"
+  PLATEAU_GAIA_KAFKA_SECURITY_PROTOCOL: "SASL_SSL"
+  PLATEAU_GAIA_KAFKA_SECURITY_SASLMECHANISM: "PLAIN"
+  PLATEAU_GAIA_KAFKA_SECURITY_SASLJAASCONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="${KAFKA_SASL_USERNAME}" password="${KAFKA_SASL_PASSWORD}";'
+  PLATEAU_GAIA_KAFKA_SECURITY_SSLTRUSTSTORELOCATION: "${KAFKA_TRUSTSTORE_PATH:/usr/lib/jvm/jre/lib/security/cacerts}"
+  PLATEAU_GAIA_KAFKA_SECURITY_SSLTRUSTSTOREPASSWORD: "${KAFKA_TRUSTSTORE_PASSWORD:changeit}"
+  PLATEAU_GAIA_KAFKA_SECURITY_SSLENDPOINTIDENTIFICATIONALGORITHM: ""
+
+resources:
+  requests: { cpu: 500m, memory: 768Mi }
+  limits:   { cpu: "1",  memory: 1280Mi }
+
+# Optional IAM Policy Agent (IPA) PDP sidecar — a second container in this same Deployment,
+# gated off `ipa.enabled` (defaults to true; the generator can still force it off per solution
+# when an entry point doesn't use PDP authorization). Solution-per-sidecar rather than a
+# platform-shared IPA: each solution's policy stays isolated in its own umbrella values block
+# (ipa.pdp.policies below), never a chart-shipped file.
+ipa:
+  enabled: true
+  image:
+    repository: scorenexus.isbank:9443/softtech-rally/plateau-dev/iam-policy-agent-service
+    tag: "0.3.0-beta-260804-1"  # pinned; the chart's appVersion tracks GaiA, not the agent
+    pullPolicy: IfNotPresent
+  service:
+    targetPort: 8080            # GaiA reaches it at http://localhost:8080
+  resources:
+    limits:   { cpu: "2",   memory: 4Gi }
+    requests: { cpu: 400m,  memory: 2Gi }
+  startupProbe:
+    httpGet: { path: /actuator/health, port: ipa-http, scheme: HTTP }
+    periodSeconds: 5
+    timeoutSeconds: 5
+    failureThreshold: 36        # generous window for JVM cold start (cert import + policy compile)
+  livenessProbe:
+    httpGet: { path: /actuator/health, port: ipa-http, scheme: HTTP }
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 5
+  readinessProbe:
+    httpGet: { path: /actuator/health, port: ipa-http, scheme: HTTP }
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 10
+  pdp:
+    policy:
+      domainId: ""               # empty -> config.solutionSlug
+      policyPackageId: ""        # empty -> "<domainId>-policy-package"
+      packageVersion: ""         # empty -> not rendered (single-version bundle)
+    # PDP policy files as "<filename>.yaml": "<policy yaml content>". The generator writes the
+    # solution's policy here, into every generated values-<solution>-<environment>.yaml block;
+    # the chart builds a ConfigMap from this map and mounts it as a directory at
+    # /app/resources/pdp/policies. Empty -> no ConfigMap, no mount (IPA falls back to
+    # its default-deny baseline).
+    policies: {}
+      # pdp-policy.yaml: |
+      #   schemaVersion: "1.0"
+      #   ...
+
+redis:
+  # enabled: true  -> deploys internal Redis; REDIS_HOST/PORT set from internal service.
+  # enabled: false -> no internal Redis deployed.
+  #   if host is also set, REDIS_HOST/PORT are still injected (external Redis mode).
+  #   if host is empty, no Redis env vars are injected at all.
+  enabled: false
+  image: scorenexus.isbank:9443/rhel9/redis-7:9.8-1782912632
+  # host/port: used only when enabled=false to point at an external Redis instance.
+  host: ""
+  port: 6379
+  # Redis authentication: reads the 'password' key from this pre-existing
+  # Secret. Empty -> no authentication. The chart never creates a Secret.
+  existingSecret: ""
+  resources:
+    requests: { cpu: 50m,  memory: 64Mi }
+    limits:   { cpu: 200m, memory: 128Mi }
+
+ingress:
+  enabled: false
+  className: ""
+  host: ""                      # empty -> OpenShift router generates a host
+  tls:
+    # enabled: true -> the ingress is TLS-terminated (needs a host).
+    # secretName empty -> served by the platform's own certificate (OpenShift router wildcard);
+    # set it only to terminate with your own pre-existing TLS Secret.
+    enabled: false
+    secretName: ""
+  annotations: {}
+  # One rule per entry point consumer path. A published values-<env>.yaml always
+  # replaces this list with the paths the design actually declares; the entry
+  # below is only the fallback for using this chart by hand.
+  paths:
+    - { path: /, pathType: Prefix }
+
+# ServiceAccount configuration. The chart uses the namespace's existing
+# <namespace>-sa ServiceAccount by default (serviceAccount.name empty).
+# Set serviceAccount.create: true only if a dedicated SA is needed.
+serviceAccount:
+  enabled: true
+  create: false
+  # name: ""  # empty -> uses "<namespace>-sa" (existing in cluster)
+
+# Conjur secret management. When enabled, secret values must start with
+# "Vault/" prefix (e.g., Vault/Conjur/CONJUR_ACI.../path/to/secret).
+# The chart validates this at template rendering time.
+secrets:
+  conjur:
+    enabled: false
+    image: scorenexus.isbank:9443/cyberark/secrets-provider-for-k8s
+    tag: latest
+  # Kafka SASL credentials (injected as KAFKA_SASL_USERNAME/PASSWORD env vars).
+  # Values can be plain text (standard mode) or "Vault/Conjur/..." paths (conjur mode).
+  kafka:
+    username: ""
+    password: ""
+  # Additional secret key->value pairs injected as env vars.
+  # Use for any additional secrets beyond kafka.username/password.
+  # Values can be plain text (standard mode) or "Vault/Conjur/..." paths (conjur mode).
+  secret-key-values: {}
+
+# Certificate trusting configuration for Java applications.
+# Imports custom CA certificates into Java's cacerts trust store via an initContainer.
+# Enabled by default with the bank root CA ConfigMap; override per environment to disable
+# or to add further certificates.
+trustcerts:
+  enabled: true
+  # Inline certificates: key = cert name (no extension), value = PEM content.
+  certs: {}
+    # example-ca: |
+    #   -----BEGIN CERTIFICATE-----
+    #   MIIDXTCCAkWgAwIBAgIJAKJ5Z...
+    #   -----END CERTIFICATE-----
+  # External ConfigMaps containing certificates: configmap-name -> key-name.
+  configmaps:
+    isbank-root-ca.crt: isbank-root-ca.crt

@@ -1,0 +1,34 @@
+{{- $pattern := include "plateau-gaia-bfa.configGlob" . }}
+{{- $files := .Files.Glob $pattern }}
+{{- if eq (len $files) 0 }}
+{{- fail (printf "No GWCJSON files found at %s — check config.solutionSlug and config.environmentSlug" $pattern) }}
+{{- end }}
+{{- $gatewayConfig := printf "config/%s/%s/gateway-ep-config.gwcjson" .Values.config.solutionSlug .Values.config.environmentSlug }}
+{{- if not (.Files.Get $gatewayConfig) }}
+{{- fail (printf "Required file %s is missing from the selected environment" $gatewayConfig) }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plateau-gaia-bfa.fullname" . }}-config
+  labels:
+    {{- include "plateau-gaia-bfa.labels" . | nindent 4 }}
+data:
+  {{- range $path, $_ := $files }}
+  {{ base $path }}: |
+    {{- $.Files.Get $path | nindent 4 }}
+  {{- end }}
+{{- if and .Values.trustcerts.enabled .Values.trustcerts.certs }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plateau-gaia-bfa.fullname" . }}-trusted-certs
+  labels:
+    {{- include "plateau-gaia-bfa.labels" . | nindent 4 }}
+data:
+  {{- range $certName, $certContent := .Values.trustcerts.certs }}
+  {{ $certName }}.crt: |-
+{{ $certContent | indent 4 }}
+  {{- end }}
+{{- end }}

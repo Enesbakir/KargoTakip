@@ -1,0 +1,93 @@
+[
+  {
+    "route": {
+      "id": "route-operation-a1c90f70-48ff-4295-82f9-f098321d2299",
+      "from": {
+        "uri": "direct:route-operation-a1c90f70-48ff-4295-82f9-f098321d2299",
+        "steps": [
+          {
+            "setProperty": {
+              "name": "originalInput",
+              "simple": "${body}"
+            }
+          },
+          {
+            "setProperty": {
+              "name": "correlationId",
+              "simple": "${exchangeId}"
+            }
+          },
+          {
+            "log": {
+              "message": "[${exchangeProperty.correlationId}] Calling retrieve_current_account",
+              "loggingLevel": "DEBUG"
+            }
+          },
+          {
+            "to": {
+              "uri": "direct:route-operation-a1c90f70-48ff-4295-82f9-f098321d2299-call-call-b817debf-349b-420f-aa0e-7800d8eafbbd",
+              "variableReceive": "response_retrieve_current_account"
+            }
+          },
+          {
+            "setBody": {
+              "simple": "${variable.response_retrieve_current_account}"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": {
+      "id": "route-operation-a1c90f70-48ff-4295-82f9-f098321d2299-call-call-b817debf-349b-420f-aa0e-7800d8eafbbd",
+      "from": {
+        "uri": "direct:route-operation-a1c90f70-48ff-4295-82f9-f098321d2299-call-call-b817debf-349b-420f-aa0e-7800d8eafbbd",
+        "steps": [
+          {
+            "setProperty": {
+              "name": "GW_INVOKE_URL_OVERRIDE",
+              "simple": "http://host.docker.internal:8080/current-account/${exchangeProperty.originalInput[crId]}"
+            }
+          },
+          {
+            "setBody": {
+              "constant": ""
+            }
+          },
+          {
+            "removeHeader": {
+              "name": "CamelHttpQuery"
+            }
+          },
+          {
+            "setUpstreamAuthBy": {
+              "tokenPassthrough": {}
+            }
+          },
+          {
+            "kamelet": {
+              "name": "plateau-rest-invoke-action",
+              "parameters": {
+                "url": "http://host.docker.internal:8080/current-account/{crId}",
+                "method": "GET",
+                "socketTimeoutMs": 10000,
+                "connectionRequestTimeoutMs": 2000
+              }
+            }
+          },
+          {
+            "convertBodyTo": {
+              "type": "java.lang.String"
+            }
+          },
+          {
+            "unmarshal": {
+              "json": {}
+            }
+          }
+        ]
+      }
+    }
+  }
+]

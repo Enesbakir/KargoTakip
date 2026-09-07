@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "plateau-gaia-bfa.fullname" . }}
+  labels:
+    {{- include "plateau-gaia-bfa.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "plateau-gaia-bfa.appSelectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.containerPort }}
+      targetPort: http
