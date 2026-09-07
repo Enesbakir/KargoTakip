@@ -41,8 +41,9 @@ new-integration-solution:
   existingSecret: ""
   secrets:
     conjur:
-      enabled: false
+      enabled: true
     kafka:
       username: Vault/Conjur
       password: Vault/Conjur
-    secret-key-values: {}
+    secret-key-values:
+      NEW_INTEGRATION_SOLUTION__TEST_HEADER: Vault/Conjur

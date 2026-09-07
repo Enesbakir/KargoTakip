@@ -67,6 +67,14 @@
           },
           {
             "kamelet": {
+              "name": "plateau-upstream-headers-auth-action",
+              "parameters": {
+                "valueRefs": "{\"test\":\"FILE:/mnt/gaia-secrets:NEW_INTEGRATION_SOLUTION__TEST_HEADER\"}"
+              }
+            }
+          },
+          {
+            "kamelet": {
               "name": "plateau-rest-invoke-action",
               "parameters": {
                 "url": "http://host.docker.internal:8080/current-account/{crId}",
