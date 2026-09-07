@@ -66,6 +66,12 @@
             }
           },
           {
+            "setHeader": {
+              "name": "test",
+              "simple": ""
+            }
+          },
+          {
             "kamelet": {
               "name": "plateau-rest-invoke-action",
               "parameters": {

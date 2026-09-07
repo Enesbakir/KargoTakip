@@ -2,7 +2,7 @@
   "manifestVersion": "1.0",
   "scope": "solution",
   "solutionSlug": "new-integration-solution",
-  "generatedAt": "2026-09-07T06:21:49.756Z",
+  "generatedAt": "2026-09-07T08:47:40.123Z",
   "files": [
     "helm/charts/plateau-gaia-bfa/config/new-integration-solution/deployment-manifest.json",
     "helm/charts/plateau-gaia-bfa/config/new-integration-solution/project.json",

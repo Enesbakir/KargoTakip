@@ -89,8 +89,7 @@
                 {
                   "id": "header-83ee1097-8a57-47f9-8a33-9126aea3d95a",
                   "name": "test",
-                  "value": "",
-                  "secretId": "secret-4060c23a-89e2-40ab-9e2e-e32e7cc75f9c"
+                  "value": ""
                 }
               ],
               "requestParameters": [
@@ -152,14 +151,7 @@
   ],
   "tokenTargets": [],
   "apiKeys": [],
-  "secrets": [
-    {
-      "id": "secret-4060c23a-89e2-40ab-9e2e-e32e7cc75f9c",
-      "name": "test header",
-      "key": "NEW_INTEGRATION_SOLUTION__TEST_HEADER",
-      "kind": "headerValue"
-    }
-  ],
+  "secrets": [],
   "fieldScopes": {},
   "tlsProfiles": [],
   "permissions": [],
@@ -182,10 +174,6 @@
             "path": "Vault/Conjur"
           },
           "kafka-sasl-password": {
-            "source": "conjurFile",
-            "path": "Vault/Conjur"
-          },
-          "secret-4060c23a-89e2-40ab-9e2e-e32e7cc75f9c": {
             "source": "conjurFile",
             "path": "Vault/Conjur"
           }
@@ -215,12 +203,7 @@
         "tokenTargets": {},
         "serviceCallUrls": {},
         "operationBaseUrls": {},
-        "secretBindings": {
-          "secret-4060c23a-89e2-40ab-9e2e-e32e7cc75f9c": {
-            "source": "conjurFile",
-            "path": "Vault/Conjur"
-          }
-        },
+        "secretBindings": {},
         "fields": {}
       },
       "helm": {
@@ -241,12 +224,7 @@
         "tokenTargets": {},
         "serviceCallUrls": {},
         "operationBaseUrls": {},
-        "secretBindings": {
-          "secret-4060c23a-89e2-40ab-9e2e-e32e7cc75f9c": {
-            "source": "conjurFile",
-            "path": "Vault/Conjur"
-          }
-        },
+        "secretBindings": {},
         "fields": {}
       },
       "helm": {
@@ -305,12 +283,7 @@
         "tokenTargets": {},
         "serviceCallUrls": {},
         "operationBaseUrls": {},
-        "secretBindings": {
-          "secret-4060c23a-89e2-40ab-9e2e-e32e7cc75f9c": {
-            "source": "conjurFile",
-            "path": "Vault/Conjur"
-          }
-        },
+        "secretBindings": {},
         "fields": {}
       },
       "helm": {
@@ -410,5 +383,5 @@
   "policyYaml": "",
   "importedRoutes": [],
   "createdAt": "2026-09-03T13:17:57.277Z",
-  "updatedAt": "2026-09-07T06:21:40.024Z"
+  "updatedAt": "2026-09-07T08:46:14.694Z"
 }
